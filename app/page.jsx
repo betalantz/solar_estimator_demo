@@ -41,33 +41,32 @@ import {
 } from "@/components/ui/select";
 import { ResponsiveLine } from "@nivo/line";
 import { mockApiResponse, calculateAnnualPowerOutput } from "@/lib/mockApi";
-
-
+import { locales } from "@/lib/unmetered_locations";
 
 export default function Dashboard() {
-
   const [address, setAddress] = useState("");
   const [locationInput, setLocationInput] = useState("address");
-  const [location, setLocation] = useState(null);
-  const [direction, setDirection] = useState("")
-  const [capacity, setCapacity] = useState("")
+  const [location, setLocation] = useState('');
+  const [direction, setDirection] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [annualOutput, setAnnualOutput] = useState(0);
+  const [locale, setLocale] = useState('')
   
   console.log("Component mounted, initial location:", location);
-
+  
   useEffect(() => {
     console.log("Effect ran, location:", location);
   }, [location]);
 
-  useEffect(()=>{
-    const output = calculateAnnualPowerOutput()
-    setAnnualOutput(output)
-  })
-  
+  useEffect(() => {
+    const output = calculateAnnualPowerOutput();
+    setAnnualOutput(output);
+  });
+
   const handleAddressChange = (e) => {
     setAddress(e.target.value);
   };
-  
+
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -85,52 +84,74 @@ export default function Dashboard() {
       );
     }
   };
-  
+
   const handleLocationRadios = (value) => {
-    console.log("🚀 ~ handleLocationRadios ~ e:", value)
-    
-    setLocationInput(value)
+    console.log("🚀 ~ handleLocationRadios ~ e:", value);
+
+    setLocationInput(value);
   };
 
-  const handleDirectionChange = value => setDirection(value)
+  const handleLocaleChange = (value) => {
+    // if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
+    //   setLocation(value);
+    // } else {
+    //   console.warn('Invalid locale value:', value);
+    // }
+    if (typeof value === 'string') {
+      setLocale(value)
+      setLocation(locales[value])
+    } else {
+      console.warn('Invalid locale value:', value)
+    }
+  };
 
-  const handleCapacityChange = e => setCapacity(e.target.value)
+  const handleDirectionChange = (value) => setDirection(value);
+
+  const handleCapacityChange = (e) => setCapacity(e.target.value);
 
   const apiKey = process.env.NEXT_PUBLIC_SOLCAST_API_KEY;
-  console.log("🚀 ~ Dashboard ~ apiKey:", apiKey)
-  
+  console.log("🚀 ~ Dashboard ~ apiKey:", apiKey);
+
   const handleGetEstimate = async () => {
-    const url = new URL('/api/get-solar-estimate', window.location.origin);
-    
-    url.searchParams.append('latitude', location?.lat ?? '');
-    url.searchParams.append('longitude', location?.long ?? '');
-    url.searchParams.append('hours', '24');
-    url.searchParams.append('period', 'PT30M');
-    url.searchParams.append('output_parameters', 'pv_power_rooftop');
-    url.searchParams.append('azimuth', direction ?? '');
-    url.searchParams.append('capacity', capacity ?? '');
+    const url = new URL("/api/get-solar-estimate", window.location.origin);
+
+    url.searchParams.append("latitude", location?.lat ?? "");
+    url.searchParams.append("longitude", location?.long ?? "");
+    url.searchParams.append("hours", "24");
+    url.searchParams.append("period", "PT30M");
+    url.searchParams.append("output_parameters", "pv_power_rooftop");
+    url.searchParams.append("azimuth", direction ?? "");
+    url.searchParams.append("capacity", capacity ?? "");
 
     try {
       const response = await fetch(url.toString(), {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${apiKey}`
+          Authorization: `Bearer ${apiKey}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error("Network response was not ok");
       }
 
       const data = await response.json();
-      console.log('Solar Estimate Data:', data);
+      console.log("Solar Estimate Data:", data);
       // Handle the data as needed
     } catch (error) {
-      console.error('Error getting solar estimate:', error);
+      console.error("Error getting solar estimate:", error);
       // Handle the error appropriately
     }
-
   };
+
+  const localeSelectors = Object.keys(locales).map((name) => (
+    <SelectItem
+      key={name}
+      value={name}
+    >
+      {name}
+    </SelectItem>
+  ));
 
   return (
     <div>
@@ -157,7 +178,6 @@ export default function Dashboard() {
                     id="address-radio"
                     value="address"
                     name="location-radios"
-                   
                   />
                   Enter Address
                 </Label>
@@ -169,9 +189,19 @@ export default function Dashboard() {
                     id="location-radio"
                     value="location"
                     name="location-radios"
-                    
                   />
                   Use Current Location
+                </Label>
+                <Label
+                  htmlFor="unmetered-radio"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <RadioGroupItem
+                    id="location-radio"
+                    value="unmet-locale"
+                    name="location-radios"
+                  />
+                  Use Free Location
                 </Label>
               </RadioGroup>
               {locationInput === "address" && (
@@ -194,9 +224,23 @@ export default function Dashboard() {
                   </Button>
                   {location && (
                     <div>
-                      Latitude: {location.lat}, Longitude: {location.lng}
+                      Latitude: {location.lat}, Longitude: {location.long}
                     </div>
                   )}
+                </div>
+              )}
+              {locationInput === "unmet-locale" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="unmet_locale">Locale</Label>
+                  <Select
+                    id="unmet_locale"
+                    onValueChange={handleLocaleChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select locale" />
+                    </SelectTrigger>
+                    <SelectContent>{localeSelectors}</SelectContent>
+                  </Select>
                 </div>
               )}
               <div className="grid gap-2">
@@ -235,7 +279,9 @@ export default function Dashboard() {
                   <CardTitle>Estimated Solar Energy Production</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">{annualOutput.toFixed(2)} kWh/year</div>
+                  <div className="text-4xl font-bold">
+                    {annualOutput.toFixed(2)} kWh/year
+                  </div>
                   <p className="text-muted-foreground">
                     Based on your location and solar array capacity.
                   </p>
