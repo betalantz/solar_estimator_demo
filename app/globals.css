@@ -24,6 +24,9 @@
     --input: 200 40% 56%;
     --ring: 200 40% 60%;
     --radius: 1rem;
+    --next-color-primary: #0000ff;
+    --font-heading: 'Manrope', sans-serif;
+    --font-body: 'Manrope', sans-serif;
   }
 }
 

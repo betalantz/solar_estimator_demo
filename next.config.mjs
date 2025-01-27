@@ -1,5 +1,9 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+// @ts-check
+/** 
+ * @type {import('next').NextConfig} 
+ */
+export const nextConfig = {
+  reactStrictMode: true,
   async rewrites() {
     return [
       {
@@ -9,5 +13,3 @@ const nextConfig = {
     ];
   },
 };
-
-export default nextConfig;

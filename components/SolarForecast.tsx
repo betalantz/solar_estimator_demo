@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Sun, Battery, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { SummaryCard }  from '@/components/SummaryCard'
 
 // Assume this data is fetched from an API
 const mockApiResponse = {
@@ -60,31 +61,36 @@ const mockApiResponse = {
   ]
 }
 
+interface Forecast {
+  pv_power_rooftop: number;
+  period_end: string;
+  period: string;
+  time: string;
+}
+
 export default function Component() {
-  const [forecastData, setForecastData] = useState([])
-  const [totalPower, setTotalPower] = useState(0)
-  const [peakPower, setPeakPower] = useState(0)
-  const [productionHours, setProductionHours] = useState(0)
+  const [forecastData, setForecastData] = useState<Forecast[]>([]);
+  const [totalPower, setTotalPower] = useState<string>("0.00");
+  const [peakPower, setPeakPower] = useState<string>("0.00");
+  const [productionHours, setProductionHours] = useState<string>("0.0");
 
   useEffect(() => {
-    // In a real application, you would fetch data from an API here
-    const processedData = mockApiResponse.forecasts.map(forecast => ({
+    const processedData: Forecast[] = mockApiResponse.forecasts.map(forecast => ({
       ...forecast,
       time: new Date(forecast.period_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       pv_power_rooftop: parseFloat(forecast.pv_power_rooftop.toFixed(3))
-    }))
+    }));
 
-    setForecastData(processedData)
+    setForecastData(processedData);
 
-    // Calculate summary statistics
-    const total = processedData.reduce((sum, forecast) => sum + forecast.pv_power_rooftop, 0)
-    const peak = Math.max(...processedData.map(forecast => forecast.pv_power_rooftop))
-    const hours = processedData.filter(forecast => forecast.pv_power_rooftop > 0).length / 2 // Each period is 30 minutes
+    const total = processedData.reduce((sum, forecast) => sum + forecast.pv_power_rooftop, 0);
+    const peak = Math.max(...processedData.map(forecast => forecast.pv_power_rooftop));
+    const hours = processedData.filter(forecast => forecast.pv_power_rooftop > 0).length / 2;
 
-    setTotalPower(total.toFixed(2))
-    setPeakPower(peak.toFixed(2))
-    setProductionHours(hours.toFixed(1))
-  }, [])
+    setTotalPower(total.toFixed(2));
+    setPeakPower(peak.toFixed(2));
+    setProductionHours(hours.toFixed(1));
+  }, []);
 
   return (
     <div className="container mx-auto p-4 bg-gradient-to-b from-blue-100 to-blue-200 min-h-screen">
@@ -99,36 +105,9 @@ export default function Component() {
         </CardHeader>
         <CardContent className="bg-white rounded-b-lg p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <Battery className="text-blue-500" />
-                  <ArrowUpRight className="text-green-500" />
-                </div>
-                <p className="text-sm text-blue-600 mt-2">Total Power</p>
-                <p className="text-2xl font-bold text-blue-700">{totalPower} kWh</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <Sun className="text-yellow-500" />
-                  <ArrowUpRight className="text-green-500" />
-                </div>
-                <p className="text-sm text-blue-600 mt-2">Peak Power</p>
-                <p className="text-2xl font-bold text-blue-700">{peakPower} kW</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <Sun className="text-yellow-500" />
-                  <ArrowDownRight className="text-blue-500" />
-                </div>
-                <p className="text-sm text-blue-600 mt-2">Production Hours</p>
-                <p className="text-2xl font-bold text-blue-700">{productionHours} hours</p>
-              </CardContent>
-            </Card>
+            <SummaryCard icon={Battery} arrow={ArrowUpRight} title="Total Power" value={`${totalPower} kWh`} />
+            <SummaryCard icon={Sun} arrow={ArrowUpRight} title="Peak Power" value={`${peakPower} kW`} />
+            <SummaryCard icon={Sun} arrow={ArrowDownRight} title="Production Hours" value={`${productionHours} hours`} />
           </div>
           <div className="w-full h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -140,11 +119,11 @@ export default function Component() {
                   angle={-45} 
                   textAnchor="end" 
                   height={70}
-                  tick={{fontSize: 12}}
+                  tick={{ fontSize: 12 }}
                 />
                 <YAxis 
                   label={{ value: 'Power (kW)', angle: -90, position: 'insideLeft' }} 
-                  tick={{fontSize: 12}}
+                  tick={{ fontSize: 12 }}
                 />
                 <Tooltip />
                 <Line 
@@ -161,5 +140,5 @@ export default function Component() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
